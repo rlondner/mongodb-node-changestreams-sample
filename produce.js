@@ -1,8 +1,15 @@
 const MongoClient = require('mongodb');
-var url = require('./config.js').mongoDBUrl;
+const url = require('./config.js').mongoDBUrl;
+const now = Date.now();
+let deviceName = "ecobee_1234";
+/*
+if(now % 2 == 0) {
+  deviceName = "nest_5678"
+}
+*/
 const doc = {
   device: {
-    name: "ecobee_1234",
+    name: deviceName,
     celsiusTemperature: 16,
     timeStamp: new Date()
   }

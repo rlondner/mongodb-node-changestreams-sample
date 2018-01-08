@@ -59,4 +59,5 @@ typings/
 
 # package directories and files
 data/
+localStorage/
 package-lock.json

@@ -3,8 +3,17 @@ const storage = require("node-persist");
 const EJSON = require("mongodb-extjson");
 const url = require("./config.js").mongoDBUrl;
 const matchStage = {
-  $match: { "fullDocument.device.celsiusTemperature": { $gt: 15 } }
+  $match: {
+    $and: [
+      { "fullDocument.device.celsiusTemperature": { $gt: 15 } },
+      //{ "operationType": 'update' }
+    ]
+  }
 };
+const options = {
+  fullDocument: "updateLookup"
+};
+
 const CS_TOKEN = "changeStreamResumeToken";
 
 MongoClient.connect(url, (err, client) => {
@@ -14,7 +23,7 @@ MongoClient.connect(url, (err, client) => {
   }
 
   const coll = client.db("demo").collection("devices");
-  let changeStream = coll.watch([matchStage]);
+  let changeStream = coll.watch([matchStage], options);
   // const changeStream = coll.watch();
 
   storage.init({ dir: "localStorage" }).then(() => {
@@ -49,7 +58,8 @@ function pollStream(cs, storage) {
   cs.next((err, change) => {
     if (err) return console.log(err);
     resumeToken = EJSON.stringify(change._id);
-    storage.setItem(CS_TOKEN, resumeToken).then(console.log(change));
+    storage.setItem(CS_TOKEN, resumeToken)//.then(console.log(change));
+    console.log(change);
     pollStream(cs, storage);
   });
 }
