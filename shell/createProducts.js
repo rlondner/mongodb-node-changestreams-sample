@@ -16,7 +16,7 @@ function sleepFor(sleepDuration) {
 
 function create() {
   sleepFor(1000);
-  print("500ms later");
+  print("inserting doc...");
   docToInsert.quantity = 10 + Math.floor(Math.random() * 10);
   res = collection.insert(docToInsert);
   print(res)

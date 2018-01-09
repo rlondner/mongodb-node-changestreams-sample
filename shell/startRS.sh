@@ -1,1 +1,2 @@
-mongod --dbpath ./data/db --replSet "rs" --port 27017
+mkdir -p data/rs1/db
+mongod --dbpath ./data/rs1/db --replSet "rs" --port 27017

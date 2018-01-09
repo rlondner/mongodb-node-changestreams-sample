@@ -11,7 +11,7 @@ const lowVolumeUpdates = {
   $match: {
     $and: [
       { "fullDocument.quantity": { $lte: 10 } },
-      { operationType: "update" }
+      { $or: [{ operationType: "update" }, { operationType: "replace" }] }
     ]
   }
 };
@@ -20,9 +20,13 @@ const options = {
   fullDocument: "updateLookup"
 };
 
-const changeStream = collection.watch([csFilter===0?insertOps:lowVolumeUpdates], options);
+const changeStream = collection.watch(
+  [csFilter === 0 ? insertOps : lowVolumeUpdates],
+  options
+);
 
 //pollStream(changeStream);
+//print("Initial change stream: " + JSON.stringify(changeStream));
 resumeStream(changeStream, true);
 
 //this function polls a change stream and prints out each change as it comes in
@@ -45,14 +49,15 @@ function resumeStream(changeStream, forceResume = false) {
       print("\r\nSimulating app failure for 10 seconds...");
       sleepFor(10000);
       changeStream.close();
-      const newChangeStream = collection.watch([insertOps], {
+      const newChangeStream = collection.watch([csFilter === 0 ? insertOps : lowVolumeUpdates], {
         resumeAfter: resumeToken
       });
-      print("\r\nResuming change stream...\r\n");
+      //print("New change stream: " + JSON.stringify(newChangeStream));
+      print("\r\nResuming change stream with token " + JSON.stringify(resumeToken) + "\r\n");
       resumeStream(newChangeStream);
     }
   }
-  resumeStream(changeStream);
+  resumeStream(changeStream, forceResume);
 }
 
 function sleepFor(sleepDuration) {
