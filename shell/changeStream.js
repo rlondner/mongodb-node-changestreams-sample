@@ -1,4 +1,6 @@
-conn = new Mongo("mongodb://localhost:27017,localhost:27018,localhost:27019/demo?replicaSet=rs");
+conn = new Mongo(
+  "mongodb://localhost:27017,localhost:27018,localhost:27019/demo?replicaSet=rs"
+);
 db = conn.getDB("demo");
 collection = db.stock;
 
@@ -18,7 +20,7 @@ const options = {
 const changeStream = collection.watch([matchStage], options);
 
 //pollStream(changeStream);
-resumeStream(changeStream);
+resumeStream(changeStream, true);
 
 //this function polls a change stream and prints out each change as it comes in
 function pollStream(changeStream) {
@@ -30,25 +32,22 @@ function pollStream(changeStream) {
 }
 
 //this function is similar to the pollStream above. The only difference is that it prints out the first change right away, then simulates an app crash (for 10 seconds) and finally resumes processing the remaining changes by picking the change stream where it was left off (by using the resumeAfter option of the watch method)
-function resumeStream(changeStream) {
+function resumeStream(changeStream, forceResume = false) {
   let resumeToken;
   if (changeStream.hasNext()) {
     change = changeStream.next();
     print(JSON.stringify(change));
     resumeToken = change._id;
-    print("\r\nsimulating app failure for 10 seconds...")
-    sleepFor(10000);
-    changeStream.close();
-    const newChangeStream = collection.watch([matchStage], {resumeAfter: resumeToken});
-    print("\r\nresuming change stream...\r\n");
-    while (newChangeStream.hasNext()) {
-      change = newChangeStream.next();
-      print(JSON.stringify(change));
+    if (forceResume === true) {
+      print("\r\nSimulating app failure for 10 seconds...");
+      sleepFor(10000);
+      changeStream.close();
+      const newChangeStream = collection.watch([matchStage], { resumeAfter: resumeToken });
+      print("\r\nResuming change stream...\r\n");
+      resumeStream(newChangeStream);
     }
   }
-  if (changeStream !== undefined && !changeStream.isClosed()) {
-    resumeStream(changeStream);
-  }
+  resumeStream(changeStream);
 }
 
 function sleepFor(sleepDuration) {
@@ -57,4 +56,3 @@ function sleepFor(sleepDuration) {
     /* do nothing */
   }
 }
-
