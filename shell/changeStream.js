@@ -4,11 +4,14 @@ conn = new Mongo(
 db = conn.getDB("demo");
 collection = db.stock;
 
-const matchStage = {
+const insertOps = {
+  $match: { operationType: "insert" }
+};
+const lowVolumeUpdates = {
   $match: {
     $and: [
-      { "fullDocument.quantity": { $gte: 10 } },
-      { operationType: "insert" }
+      { "fullDocument.quantity": { $lte: 10 } },
+      { operationType: "update" }
     ]
   }
 };
@@ -17,7 +20,7 @@ const options = {
   fullDocument: "updateLookup"
 };
 
-const changeStream = collection.watch([matchStage], options);
+const changeStream = collection.watch([csFilter===0?insertOps:lowVolumeUpdates], options);
 
 //pollStream(changeStream);
 resumeStream(changeStream, true);
@@ -42,7 +45,9 @@ function resumeStream(changeStream, forceResume = false) {
       print("\r\nSimulating app failure for 10 seconds...");
       sleepFor(10000);
       changeStream.close();
-      const newChangeStream = collection.watch([matchStage], { resumeAfter: resumeToken });
+      const newChangeStream = collection.watch([insertOps], {
+        resumeAfter: resumeToken
+      });
       print("\r\nResuming change stream...\r\n");
       resumeStream(newChangeStream);
     }

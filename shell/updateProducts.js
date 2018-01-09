@@ -15,7 +15,7 @@ function sleepFor(sleepDuration) {
 }
 
 function update() {
-  sleepFor(500);
+  sleepFor(1000);
   //print("1 second later");
   docToInsert.quantity = 10 + Math.floor(Math.random() * 10);
   res = collection.update({quantity:{$gte:10}}, {$inc: {quantity: -Math.floor(Math.random() * 10)}}, {multi: true});
