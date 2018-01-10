@@ -35,7 +35,7 @@ MongoClient.connect(url, (err, client) => {
             if (token !== undefined) {
               console.log(`using resume token: ${token}`);
               changeStream = coll.watch([matchStage], {
-                resumeAfter: EJSON.parse(token)
+                resumeAfter: EJSON.parse(token), fullDocument: "updateLookup"
               });
             }
           },
