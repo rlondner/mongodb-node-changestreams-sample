@@ -1,32 +1,41 @@
-conn = new Mongo(
-  "mongodb://localhost:27017,localhost:27018,localhost:27019/demo?replicaSet=rs"
-);
+conn = new Mongo("mongodb://localhost:27017,localhost:27018,localhost:27019/demo?replicaSet=rs");
 db = conn.getDB("demo");
 collection = db.stock;
 
 const insertOps = {
   $match: { operationType: "insert" }
 };
-const lowVolumeUpdates = {
+
+let updateOps = {
   $match: {
     $and: [
-      { "fullDocument.quantity": { $lte: 10 } },
-      { $or: [{ operationType: "update" }, { operationType: "replace" }] }
+      { "updateDescription.updatedFields.quantity": { $lte: 10 } },
+      { operationType: "update" }
     ]
   }
 };
 
-const options = {
+/* you can use the following more complex filter if you want to track changes done through the replace() method or visually in Compass. Note that the 'replace' operation doesn't contain an 'updateDescription' sub-document but includes the 'fullDocument' sub-document by default, which explains the first $or operator below (the first operand is for 'update' operations, the second operand is for 'replace' operations)
+*/
+/*
+updateOps = {
+  $match: {
+    $and: [
+      { $or: [{ "updateDescription.updatedFields.quantity": { $lte: 10 } }, { "fullDocument.quantity": { $lte: 10 } } ]},
+      { $or: [{ operationType: "update" }, { operationType: "replace" }] }
+    ]
+  }
+};
+*/
+
+//Include the option below if you want 'update' operations to include the 'fullDocument' node in the change stream
+let updateOptions = {
   fullDocument: "updateLookup"
 };
 
-const changeStream = collection.watch(
-  [csFilter === 0 ? insertOps : lowVolumeUpdates],
-  options
-);
+const changeStream = collection.watch( [csFilter === 0 ? insertOps : updateOps]);
 
 //pollStream(changeStream);
-//print("Initial change stream: " + JSON.stringify(changeStream));
 resumeStream(changeStream, true);
 
 //this function polls a change stream and prints out each change as it comes in
@@ -49,10 +58,9 @@ function resumeStream(changeStream, forceResume = false) {
       print("\r\nSimulating app failure for 10 seconds...");
       sleepFor(10000);
       changeStream.close();
-      const newChangeStream = collection.watch([csFilter === 0 ? insertOps : lowVolumeUpdates], {
-        resumeAfter: resumeToken, fullDocument: "updateLookup"
+      const newChangeStream = collection.watch([csFilter === 0 ? insertOps : updateOps], {
+        resumeAfter: resumeToken
       });
-      //print("New change stream: " + JSON.stringify(newChangeStream));
       print("\r\nResuming change stream with token " + JSON.stringify(resumeToken) + "\r\n");
       resumeStream(newChangeStream);
     }
