@@ -50,7 +50,7 @@ function resumeStream(changeStream, forceResume = false) {
       sleepFor(10000);
       changeStream.close();
       const newChangeStream = collection.watch([csFilter === 0 ? insertOps : lowVolumeUpdates], {
-        resumeAfter: resumeToken
+        resumeAfter: resumeToken, fullDocument: "updateLookup"
       });
       //print("New change stream: " + JSON.stringify(newChangeStream));
       print("\r\nResuming change stream with token " + JSON.stringify(resumeToken) + "\r\n");
