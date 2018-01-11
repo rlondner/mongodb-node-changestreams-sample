@@ -4,9 +4,9 @@ const EJSON = require("mongodb-extjson");
 const url = require("./config.js").mongoDBUrl;
 const matchStage = {
   $match: {
-    $and: [
-      { "fullDocument.device.celsiusTemperature": { $gt: 15 } },
-      //{ "operationType": 'update' }
+    $or: [
+      { "updateDescription.updatedFields.device.celsiusTemperature": { $gt: 15 } }, //necessary to capture updates without fullDocument: 'updateLookup' option
+      { "fullDocument.device.celsiusTemperature": { $gt: 15 } } //necessary to capture inserts
     ]
   }
 };
@@ -23,7 +23,7 @@ MongoClient.connect(url, (err, client) => {
   }
 
   const coll = client.db("demo").collection("devices");
-  let changeStream = coll.watch([matchStage], options);
+  let changeStream = coll.watch([matchStage]);
   // const changeStream = coll.watch();
 
   storage.init({ dir: "localStorage" }).then(() => {
@@ -35,7 +35,7 @@ MongoClient.connect(url, (err, client) => {
             if (token !== undefined) {
               console.log(`using resume token: ${token}`);
               changeStream = coll.watch([matchStage], {
-                resumeAfter: EJSON.parse(token), fullDocument: "updateLookup"
+                resumeAfter: EJSON.parse(token)
               });
             }
           },
