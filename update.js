@@ -3,7 +3,7 @@ const url = require('./config.js').mongoDBUrl;
 
 const update = {
   $set: { "device.celsiusTemperature": 22 },
-  //$currentDate: { "timeStamp": true }
+  $currentDate: { "timeStamp": true }
 };
 
 MongoClient.connect(url, (err, client) => {
