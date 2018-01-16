@@ -1,12 +1,8 @@
-conn = new Mongo("mongodb://localhost:27017,localhost:27018,localhost:27019/demo?replicaSet=rs");
+cnxString = "mongodb://localhost:27017,localhost:27018,localhost:27019/demo?replicaSet=rs";
+conn = new Mongo(cnxString);
 db = conn.getDB("demo");
 collection = db.stock;
 let updatedQuantity = 1;
-
-var docToInsert = {
-  name: "pineapple",
-  quantity: 10
-};
 
 function sleepFor(sleepDuration) {
   var now = new Date().getTime();
@@ -17,8 +13,6 @@ function sleepFor(sleepDuration) {
 
 function update() {
   sleepFor(1000);
-  //print("1 second later");
-  docToInsert.quantity = 10 + Math.floor(Math.random() * 10);
   res = collection.update({quantity:{$gt:10}}, {$inc: {quantity: -Math.floor(Math.random() * 10)}}, {multi: true});
   print(res)
   updatedQuantity = res.nMatched + res.nModified;

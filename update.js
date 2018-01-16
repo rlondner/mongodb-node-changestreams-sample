@@ -1,11 +1,16 @@
 const MongoClient = require('mongodb');
 const url = require('./config.js').mongoDBUrl;
+/*
+const update = {
+  //$set: { device: {celsiusTemperature:22} }, //this works with change streams
+  $set: { 'device.celsiusTemperature': 22 }, //this doesn't work with change streams
+  $currentDate: { 'device.timeStamp': true },
+};
+*/
 
 const update = {
-  $set: { device: {celsiusTemperature:22} }, //this works with change streams
-  //$set: { 'device.celsiusTemperature': 22 }, //this doesn't work with change streams
-  $currentDate: { 'device.timeStamp': true },
-  //$currentDate: { device: {timeStamp:true} } //invalid syntax
+  $set: { 'celsiusTemperature': 23},
+  $currentDate: { 'timeStamp': true }
 };
 
 MongoClient.connect(url, (err, client) => {

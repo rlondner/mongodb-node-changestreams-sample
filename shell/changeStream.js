@@ -15,6 +15,24 @@ let updateOps = {
   }
 };
 
+//The $match stage below references the "fullDocument" node, which requires specifying fullDocument:'updateLookup' for update operations (which don't include the fullDocument node by default)
+/*
+const changeStream = collection.watch(
+  [{
+    $match: {
+      $and: [
+        { "fullDocument.quantity": { $lte: 10 } },
+        { operationType: "update" }
+      ]
+    }
+  }],
+  {
+    fullDocument: 'updateLookup'
+  }
+);
+*/
+
+
 /* you can use the following more complex filter if you want to track changes done through the replace() method or visually in Compass. Note that the 'replace' operation doesn't contain an 'updateDescription' sub-document but includes the 'fullDocument' sub-document by default, which explains the first $or operator below (the first operand is for 'update' operations, the second operand is for 'replace' operations)
 */
 /*
@@ -33,39 +51,52 @@ let updateOptions = {
   fullDocument: "updateLookup"
 };
 
-const changeStream = collection.watch( [csFilter === 0 ? insertOps : updateOps]);
+const changeStreamCursor = collection.watch([
+  csFilter === 0 ? insertOps : updateOps
+]);
 
-//pollStream(changeStream);
+//pollStream(changeStreamCursor);
 resumeStream(changeStream, true);
 
 //this function polls a change stream and prints out each change as it comes in
-function pollStream(changeStream) {
-  if (changeStream.hasNext()) {
-    cs = changeStream.next();
-    print(JSON.stringify(cs));
+function pollStream(cursor) {
+  while (!cursor.isExhausted()) {
+    if (cursor.hasNext()) {
+      change = cursor.next();
+      print(JSON.stringify(change));
+    }
   }
-  pollStream(changeStream);
+  pollStream(cursor);
 }
 
 //this function is similar to the pollStream above. The only difference is that it prints out the first change right away, then simulates an app crash (for 10 seconds) and finally resumes processing the remaining changes by picking the change stream where it was left off (by using the resumeAfter option of the watch method)
-function resumeStream(changeStream, forceResume = false) {
+function resumeStream(cursor, forceResume = false) {
   let resumeToken;
-  if (changeStream.hasNext()) {
-    change = changeStream.next();
-    print(JSON.stringify(change));
-    resumeToken = change._id;
-    if (forceResume === true) {
-      print("\r\nSimulating app failure for 10 seconds...");
-      sleepFor(10000);
-      changeStream.close();
-      const newChangeStream = collection.watch([csFilter === 0 ? insertOps : updateOps], {
-        resumeAfter: resumeToken
-      });
-      print("\r\nResuming change stream with token " + JSON.stringify(resumeToken) + "\r\n");
-      resumeStream(newChangeStream);
+  while (!cursor.isExhausted()) {
+    if (cursor.hasNext()) {
+      change = cursor.next();
+      print(JSON.stringify(change));
+      resumeToken = change._id;
+      if (forceResume === true) {
+        print("\r\nSimulating app failure for 10 seconds...");
+        sleepFor(10000);
+        cursor.close();
+        const newChangeStreamCursor = collection.watch(
+          [csFilter === 0 ? insertOps : updateOps],
+          {
+            resumeAfter: resumeToken
+          }
+        );
+        print(
+          "\r\nResuming change stream with token " +
+            JSON.stringify(resumeToken) +
+            "\r\n"
+        );
+        resumeStream(newChangeStreamCursor);
+      }
     }
   }
-  resumeStream(changeStream, forceResume);
+  resumeStream(cursor, forceResume);
 }
 
 function sleepFor(sleepDuration) {
