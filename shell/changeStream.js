@@ -33,19 +33,6 @@ const changeStream = collection.watch(
 */
 
 
-/* you can use the following more complex filter if you want to track changes done through the replace() method or visually in Compass. Note that the 'replace' operation doesn't contain an 'updateDescription' sub-document but includes the 'fullDocument' sub-document by default, which explains the first $or operator below (the first operand is for 'update' operations, the second operand is for 'replace' operations)
-*/
-/*
-updateOps = {
-  $match: {
-    $and: [
-      { $or: [{ "updateDescription.updatedFields.quantity": { $lte: 10 } }, { "fullDocument.quantity": { $lte: 10 } } ]},
-      { $or: [{ operationType: "update" }, { operationType: "replace" }] }
-    ]
-  }
-};
-*/
-
 //Include the option below if you want 'update' operations to include the 'fullDocument' node in the change stream
 let updateOptions = {
   fullDocument: "updateLookup"
@@ -56,7 +43,7 @@ const changeStreamCursor = collection.watch([
 ]);
 
 //pollStream(changeStreamCursor);
-resumeStream(changeStream, true);
+resumeStream(changeStreamCursor, true);
 
 //this function polls a change stream and prints out each change as it comes in
 function pollStream(cursor) {
